@@ -23,12 +23,12 @@ const authenticateUser = (req, res, next) => {
   const credentials = auth(req);
   if(credentials){
     // Look for a user whose `emailAddress` matches the credentials `name` property.
-    const user = User.findOne({
+   User.findOne({
         where:{
             emailAddress: credentials.name
         }
     })
-    .then((user, err)=>{
+    .then((user)=>{
         if (user) {
             const authenticated = bcryptjs.compareSync(credentials.pass, user.password);
             if (authenticated) {
@@ -38,12 +38,12 @@ const authenticateUser = (req, res, next) => {
               req.currentUser = user;
               next();
             } else {
-              err = new Error(`Authentication failure for email Address: ${user.emailAddress}`);
+             const err = new Error(`Authentication failure for email Address: ${user.emailAddress}`);
                 err.status = 401
               next(err);
             }
           } else {
-           err = new Err(`User not found for email Address: ${credentials.name}`);
+          const err = new Err(`User not found for email Address: ${credentials.name}`);
            err.status=401
            next(err);
           }
@@ -67,40 +67,63 @@ router.get('/users',authenticateUser, function (req, res, next) {
 })
 
 
-router.post('/users', (req, res, next) => {
-    // Check if req.body is empty and return and error
-    if(JSON.stringify(req.body)=== '{}'){
-        console.log('req body is an empty object');
-        const err = new Error;
-        err.status= 400;
-        err.message = 'You must submit user values'
-        throw errr;
+//POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content.
+
+router.post('/users',[
+    // firstname should not be empty
+    check('firstName')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "firstName"'),
+    check('lastName')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "lastName"'),
+    check('emailAddress')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "emailAddress"'),
+    check('password')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "password"')
+
+], async(req, res, next) => {
+
+   // Finds the validation errors in this request and wraps them in an object with handy functions
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-    // create new user
-    // hash new user's password
-    req.body.password =  bcryptjs.hashSync( req.body.password);
-    //create new user adding newUser to user table 
-    User.create(req.body)
-    .then(() =>{
-        // sets the Location header to "/", and returns no content
-        res.location('/');
-        res.status(201).end();
-    })
-    // Catch sequlize error and log the message for the API user
-    .catch(Sequelize.ValidationError,(err) =>{
-        console.log(Sequelize.validationResult);
-        if(err.name=="SequelizeValidationError"){
-            res.status(400).json(err);
-        }else{
-            throw err;
+
+    User.findOne({
+        where:{
+            emailAddress:req.body.emailAddress
         }
     })
-    .catch((err)=>{
-        res.status(400).json(err);
+    .then((user) => {
+        if(user) {
+            const err = new Error('This email already exist in the db');
+            next(err);
+        } else {
+            const newUser = {
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                emailAddress : req.body.lastName,
+                password: req.body.password
+            }
+            newUser.password = bcryptjs.hashSync(newUser.password);
+            User.create(newUser)
+            .then(()=>{
+                // sets the Location header to "/", and returns no content
+                res.location('/').status(201).end();
+            }).catch((err)=>{
+                res.status(400).json(err.message);
+            })
+        }
+    }).catch((err) => {
+        res.status(400).json(err.message);
     })
-})
+  
+});
 
-// GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
+//GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
 
 router.get('/courses', (req, res, next) =>{
     Course.findAll({
@@ -118,30 +141,44 @@ router.get('/courses/:id', (req, res, next) =>{
         where:{
             id:req.params.id
         },
-        attributes:{
-            include:['']
-        },
-        include:[{
+        attributes:['id','title', 'description','estimatedTime', 'materialsNeeded', 'userId'],
+        include: [{
             model:User,
-            attributes:['id', 'firstName', 'lastName', 'emailAddress']
+            attributes: ['id', 'firstName', 'lastName', 'emailAddress']
         }]
-    })
-    .then((course)=>{
+    }).then((course) =>{
         if(course){
             res.status(200).json({course});
         } else{
-            //throw an error if no course id matches the id in the req.params
-            const err = new Error(`No course found with this id: ${req.params.id}`);
-            err.status= 400;
+            const err = new Error(`Could not find a course that matches the id: ${req.params.id}`);
+            err.status=400;
             next(err);
         }
-    }).catch(err=>{
-        res.status(400).json(err.message);
-    });
+    })
 })
 
 //POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
-router.post('/courses', (req, res, next) =>{
+router.post('/courses',[
+    check('title')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "title"'),
+    check('description')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "description"'),
+    check('userId')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('Please provide a value for "userId"'),
+    check('estimeateTime')
+    .exists({ checkNull: false, checkFalsy: false }),
+    check('materialsNeeded')
+    .exists({ checkNull: false, checkFalsy: false })
+], (req, res, next) =>{
+
+    // Finds the validation errors in this request and wraps them in an object with handy functions
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
     Course.create(req.body)
     .then((course) => {
         res.location(`/api/courses/${course.id}`);

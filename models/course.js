@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     title: {
       type: DataTypes.STRING,
@@ -33,7 +33,8 @@ module.exports = (sequelize, DataTypes) => {
     // associations can be defined here
     Course.belongsTo(models.User, {
       foreignKey:{
-        fieldName:'userId'
+        fieldName:'userId',
+        allowNull:false
       }
     });
   };
