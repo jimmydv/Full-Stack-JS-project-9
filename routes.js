@@ -43,7 +43,9 @@ const authenticateUser = (req, res, next) => {
               next(err);
             }
           } else {
-            message = `User not found for email Address: ${credentials.name}`;
+           err = new Err(`User not found for email Address: ${credentials.name}`);
+           err.status=401
+           next(err);
           }
     })
  
@@ -115,6 +117,9 @@ router.get('/courses/:id', (req, res, next) =>{
     Course.findOne({
         where:{
             id:req.params.id
+        },
+        attributes:{
+            include:['']
         },
         include:[{
             model:User,
