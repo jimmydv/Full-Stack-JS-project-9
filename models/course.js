@@ -6,18 +6,24 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
-    title: {
+    title:{
       type: DataTypes.STRING,
-      unique:true,
-      validate:{
-        notEmpty: true
+      allowNull:false,
+      validate: {
+       function(title){
+          if(parseInt(title)==0){
+            throw new Error('The test is working')
+          }
+        }
       }
     },
     description: {
       type: DataTypes.TEXT,
       allowNull:false,
       validate:{
-        notEmpty: true
+        notEmpty: {
+          msg:"A description is required"
+        }
       }
     },
     estimatedTime:{
@@ -34,7 +40,12 @@ module.exports = (sequelize, DataTypes) => {
     Course.belongsTo(models.User, {
       foreignKey:{
         fieldName:'userId',
-        allowNull:false
+        allowNull:false,
+        validate:{
+          notEmpty: {
+            msg:"You must submit a 'userId' "
+          }
+        }
       }
     });
   };
