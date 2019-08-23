@@ -9,11 +9,10 @@ module.exports = (sequelize, DataTypes) => {
     title:{
       type: DataTypes.STRING,
       allowNull:false,
-      validate: {
-       function(title){
-          if(parseInt(title)==0){
-            throw new Error('The test is working')
-          }
+      validate:{
+        notEmpty: {
+          arg:true,
+          msg:"A Course title is required"
         }
       }
     },
@@ -43,6 +42,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull:false,
         validate:{
           notEmpty: {
+            arg:true,
             msg:"You must submit a 'userId' "
           }
         }

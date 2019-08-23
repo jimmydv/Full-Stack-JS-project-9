@@ -76,13 +76,7 @@ router.get('/users',authenticateUser, function (req, res, next) {
 router.post('/users', async(req, res, next) => {
 
    
-    const newUser = {
-                    firstName: req.body.firstName,
-                    lastName: req.body.lastName,
-                    emailAddress : req.body.emailAddress,
-                    password: req.body.password
-                }
-            User.create(newUser)
+            User.create(req.body)
             .then(()=>{
                 //  sets the Location header to "/", and returns no content
                 res.location('/').status(201).end();
@@ -161,11 +155,14 @@ router.put('/courses/:id',authenticateUser, (req, res, next) => {
                 course.update(req.body);
                 res.status(204).end()
             } else{
-                res.status(403).json("Oops! sorry, you don't have permission to update this course");
+                const err = new Error("Oops! sorry, you don't have permission to update this course");
+                err.status= 401;
+                next();
             }
-        } else{
-
         }
+    })
+    .catch((err) =>{
+        next(err);
     })
         
 })

@@ -8,14 +8,27 @@ module.exports = (sequelize, DataTypes) => {
     },
     firstName: {
       type: DataTypes.STRING,
-      allowNull:false
+      allowNull:false,
+      validate:{
+        notEmpty: {
+          arg:true,
+          msg:"You must provide a value for firstName"
+        }
+      }
     },
     lastName:{
       type: DataTypes.STRING,
-      allowNull:false
+      allowNull:false,
+      validate:{
+        notEmpty: {
+          arg:true,
+          msg:"You must provide a value for lastName"
+        }
+      }
     },
     emailAddress: {
       type: DataTypes.STRING,
+      allowNull:false,
       unique:{
         args:true,
         msg:"this email is already being used"
@@ -29,7 +42,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     password: {
       type: DataTypes.STRING,
-      allowNull:false
+      allowNull:false,
+      validate:{
+        notEmpty: {
+          arg:true,
+          msg:"You must provide a value for password"
+        }
+      }
     },
   }, {});
   User.associate = function(models) {
