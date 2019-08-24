@@ -10,6 +10,8 @@ const User = require("./models").User;
 const Course = require("./models").Course;
 const bodyParser = require('body-parser');
 const Sequelize = require('sequelize');
+
+
 // parse application/x-www-form-urlencoded
 router.use(bodyParser.urlencoded({ extended: false }))
  
@@ -74,9 +76,11 @@ router.get('/users',authenticateUser, function (req, res, next) {
 //POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content.
 
 router.post('/users', async(req, res, next) => {
+    // test if proper email format is being used.
+    var regexEmail = /\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/;
 
-   
-            User.create(req.body)
+    if(regexEmail.test(req.body.emailAddress)){
+        User.create(req.body)
             .then(()=>{
                 //  sets the Location header to "/", and returns no content
                 res.location('/').status(201).end();
@@ -84,6 +88,11 @@ router.post('/users', async(req, res, next) => {
                 console.log(err.message);
                 res.status(400).json(err.message);
             })
+    }else{
+        const err = new Error("Invalid email format");
+        err.status= 400;
+        next(err);
+    }
           
 });
 
@@ -136,13 +145,19 @@ router.post('/courses', (req, res, next) =>{
         res.status(201).end();
     }).catch((err) =>{
         console.log(err.message)
+        err.status = 400;
         next(err);
     })
 })
 
 // PUT /api/courses/:id 204 - Updates a course and returns no content
 router.put('/courses/:id',authenticateUser, (req, res, next) => {
-       
+    if (JSON.stringify(req.body) === '{}') {
+        console.log('No data was submitted');
+        const err = new Error("The body of your request constains no data");
+        err.status = 400;
+        throw err;
+      }
     const user = req.currentUser;
     Course.findOne({
         where:{
@@ -162,6 +177,7 @@ router.put('/courses/:id',authenticateUser, (req, res, next) => {
         }
     })
     .catch((err) =>{
+        err.status = 400;
         next(err);
     })
         

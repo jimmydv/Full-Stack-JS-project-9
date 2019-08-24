@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const routes = require('./routes'); 
 const Sequelize = require('sequelize');
+const sequelize = require("./models").sequelize;
 // variable to enable global error logging
 const enableGlobalErrorLogging = process.env.ENABLE_GLOBAL_ERROR_LOGGING === 'true';
 
@@ -23,6 +24,16 @@ var urlencodedParser = bodyParser.urlencoded({ extended: false })
  
 // TODO setup your api routes here
 app.use('/api', routes);
+
+// test db connection
+sequelize
+  .authenticate()
+  .then(function(err) {
+    console.log('db Connection has been established successfully.');
+  })
+  .catch(function (err) {
+    console.log('Unable to connect to the database:', err);
+  });
 // setup a friendly greeting for the root route
 app.get('/', (req, res) => {
   res.json({
