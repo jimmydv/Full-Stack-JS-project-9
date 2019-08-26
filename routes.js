@@ -68,18 +68,46 @@ router.get('/users',authenticateUser, function (req, res, next) {
         id:user.id,
         firstName:user.firstName,
         lastName:user.lastName,
-        emailAddress:user.emailAddress
+        emailAddress:user.emailAddress,
+        password:user.password
     });
 })
 
 
 //POST /api/users 201 - Creates a user, sets the Location header to "/", and returns no content.
 
-router.post('/users', async(req, res, next) => {
+router.post('/users', [
+    check('firstName')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "firstName"'),
+    check('lastName')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "lastName"'),
+    check('emailAddress')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "emailAddress"'),
+    check('password')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "password"')
+], async(req, res, next) => {
+     // Attempt to get the validation result from the Request object.
+  const errors = validationResult(req);
+
+  // If there are validation errors...
+  if (!errors.isEmpty()) {
+    // Use the Array `map()` method to get a list of error messages.
+    const errorMessages = errors.array().map(error => error.msg);
+
+    // Return the validation errors to the client.
+    res.status(400).json({ errors: errorMessages });
+  } else{
     // test if proper email format is being used.
     var regexEmail = /\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/;
 
     if(regexEmail.test(req.body.emailAddress)){
+        
+       req.body.password =await bcryptjs.hashSync(req.body.password);
+        console.log(req.body.password);
         User.create(req.body)
             .then(()=>{
                 //  sets the Location header to "/", and returns no content
@@ -93,7 +121,8 @@ router.post('/users', async(req, res, next) => {
         err.status= 400;
         next(err);
     }
-          
+  }
+           
 });
 
 //GET /api/courses 200 - Returns a list of courses (including the user that owns each course)
@@ -135,10 +164,27 @@ router.get('/courses/:id', (req, res, next) =>{
 })
 
 //POST /api/courses 201 - Creates a course, sets the Location header to the URI for the course, and returns no content
-router.post('/courses', (req, res, next) =>{
+router.post('/courses',authenticateUser, [
+    check('title')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "title"'),
+    check('description')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "description"')
+], (req, res, next) =>{
+  // Attempt to get the validation result from the Request object.
+  const errors = validationResult(req);
 
+  // If there are validation errors...
+  if (!errors.isEmpty()) {
+    // Use the Array `map()` method to get a list of error messages.
+    const errorMessages = errors.array().map(error => error.msg);
+
+    // Return the validation errors to the client.
+    res.status(400).json({ errors: errorMessages });
+  } else{
     // Finds the validation errors in this request and wraps them in an object with handy functions
-
+  
     Course.create(req.body)
     .then((course) => {
         res.location(`/api/courses/${course.id}`);
@@ -147,17 +193,38 @@ router.post('/courses', (req, res, next) =>{
         console.log(err.message)
         err.status = 400;
         next(err);
-    })
+    });
+  }
+
 })
 
 // PUT /api/courses/:id 204 - Updates a course and returns no content
-router.put('/courses/:id',authenticateUser, (req, res, next) => {
-    if (JSON.stringify(req.body) === '{}') {
-        console.log('No data was submitted');
-        const err = new Error("The body of your request constains no data");
-        err.status = 400;
-        throw err;
-      }
+router.put('/courses/:id',authenticateUser, [
+    check('title')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "title"'),
+    check('title')
+    .exists({checkNull:true, checkFalsy:true})
+    .withMessage('Please provide a value for "title"'),
+], (req, res, next) => {
+    // if (JSON.stringify(req.body) === '{}') {
+    //     console.log('No data was submitted');
+    //     const err = new Error("The body of your request constains no data");
+    //     err.status = 400;
+    //     throw err;
+    //   }
+
+    // Attempt to get the validation result from the Request object.
+  const errors = validationResult(req);
+
+  // If there are validation errors...
+  if (!errors.isEmpty()) {
+    // Use the Array `map()` method to get a list of error messages.
+    const errorMessages = errors.array().map(error => error.msg);
+
+    // Return the validation errors to the client.
+    res.status(400).json({ errors: errorMessages });
+  } else{
     const user = req.currentUser;
     Course.findOne({
         where:{
@@ -180,6 +247,8 @@ router.put('/courses/:id',authenticateUser, (req, res, next) => {
         err.status = 400;
         next(err);
     })
+  }
+    
         
 })
 
